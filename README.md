@@ -2,6 +2,8 @@
 
 A curated list of awesome interactive / [explorable explanations](http://worrydream.com/ExplorableExplanations/) covering a variety of topics
 
+For bounded changes to the list, see the [swarm-ready handoff](SWARM_READY.md).
+
 # Explanations
 
 - [Airfoil](https://ciechanow.ski/airfoil/) by **Bartosz Ciechanowski** ([ciechanow.ski](https://ciechanow.ski/archives/))
