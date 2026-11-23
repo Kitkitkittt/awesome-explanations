@@ -41,7 +41,53 @@ The base above is an inspection snapshot, not a permanent working branch. Refres
 
 ## Verification starting point
 
-No executable acceptance command was established by this bounded source inspection. Read `README.md` and record the narrowest existing check before implementation. Do not invent a `test` command or infer that the repository has no tests from this gap. For a documentation-only task, check links, factual source anchors and whitespace; do not build unrelated application code.
+From the repository root, run this Python 3 check on the `Explanations` list in `README.md`. Each row must start with a named HTTP(S) link and a bold author credit. The check preserves case-insensitive title order and rejects duplicate primary URLs; optional author-homepage links do not count as primary links.
+
+```sh
+python3 -IBS - <<'PY'
+import re
+from pathlib import Path
+from urllib.parse import urlsplit
+
+lines = Path("README.md").read_text(encoding="utf-8").splitlines()
+try:
+    start = lines.index("# Explanations") + 1
+    end = lines.index("# Contributing", start)
+except ValueError:
+    raise SystemExit("README.md: missing Explanations or Contributing heading")
+
+entry = re.compile(r"- \[([^\]]+)\]\(([^()\s]+)\)[ \t]+by[ \t]+\*\*([^*]+)\*\*")
+previous_title = ""
+destinations = {}
+for number, row in enumerate(lines[start:end], start + 1):
+    if not row.strip():
+        continue
+    match = entry.match(row)
+    if not match or not match[1].strip() or not match[3].strip():
+        raise SystemExit(f"README.md:{number}: expected a title link followed by a bold author credit")
+    title, destination, _ = match.groups()
+    try:
+        url = urlsplit(destination)
+        valid = url.scheme in {"http", "https"} and url.hostname
+    except ValueError:
+        valid = False
+    if not valid:
+        raise SystemExit(f"README.md:{number}: expected an HTTP(S) URL with a host")
+    if destination in destinations:
+        raise SystemExit(f"README.md:{number}: primary link already listed at line {destinations[destination]}")
+    key = title.strip().casefold()
+    if key <= previous_title:
+        raise SystemExit(f"README.md:{number}: repeated or out-of-order title")
+    previous_title = key
+    destinations[destination] = number
+
+if not destinations:
+    raise SystemExit("README.md: Explanations list is empty")
+print(f"Checked titles, primary links and author credits for {len(destinations)} explanations.")
+PY
+```
+
+Expect exit 0 and an explanation count. This reads only local Markdown; do not fetch badges, visit any URL, or load or run the linked interactive examples. The check does not attest to link availability or the accuracy of an attribution.
 
 ## Required handoff result
 
